@@ -2,235 +2,666 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AI Video Studio</title>
-<style>
-*{box-sizing:border-box}
-body{margin:0;background:#08111f;color:#eef5ff;font:16px Arial,sans-serif}
-header{padding:18px;background:#10233b;border-bottom:1px solid #294766}
-h1{margin:0;font-size:24px}
-main{max-width:1000px;margin:auto;padding:16px;display:grid;gap:16px}
-.panel{background:#102038;border:1px solid #294766;border-radius:12px;padding:16px}
-button,.file-button{display:inline-block;background:#1769ed;color:white;border:0;border-radius:8px;padding:12px;margin:4px;cursor:pointer;font-weight:bold}
-button:hover,.file-button:hover{background:#3585ff}
-input,textarea,select{width:100%;padding:12px;margin:6px 0;background:#071525;color:white;border:1px solid #365574;border-radius:7px}
-textarea{min-height:100px}
-video{width:100%;max-height:420px;background:#000;margin-top:12px}
-#status{color:#70e4b8}
-#result{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5}
-#previewText{font-size:28px;font-weight:bold;text-align:center;white-space:pre-wrap}
-label{display:block;margin-top:12px}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Video Studio</title>
+
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #141b2e;
+      --panel2: #1b2540;
+      --text: #f4f6ff;
+      --muted: #a6b0ca;
+      --accent: #8b7cff;
+      --accent2: #42d9c8;
+      --border: #2a3552;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, system-ui, Arial, sans-serif;
+    }
+
+    header {
+      padding: 22px 5%;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    .logo {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.7px;
+    }
+
+    .logo span { color: var(--accent); }
+
+    .status {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .container {
+      max-width: 1250px;
+      margin: auto;
+      padding: 28px 20px 50px;
+    }
+
+    .intro { margin-bottom: 25px; }
+
+    h1 {
+      font-size: clamp(27px, 4vw, 40px);
+      margin: 0 0 8px;
+      letter-spacing: -1.2px;
+    }
+
+    .intro p, .muted {
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .panel {
+      min-width: 0;
+      padding: 20px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: var(--panel);
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      font-size: 17px;
+      margin: 0 0 17px;
+    }
+
+    .video-stage {
+      position: relative;
+      background: #05070d;
+      border-radius: 12px;
+      overflow: hidden;
+      min-height: 240px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    video {
+      display: block;
+      width: 100%;
+      max-height: 470px;
+      object-fit: contain;
+    }
+
+    .empty-state {
+      padding: 35px 15px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .empty-state .big {
+      font-size: 42px;
+      margin-bottom: 12px;
+    }
+
+    .video-title {
+      position: absolute;
+      left: 5%;
+      right: 5%;
+      bottom: 12%;
+      text-align: center;
+      font-size: clamp(20px, 4vw, 38px);
+      font-weight: 900;
+      color: white;
+      text-shadow: 0 2px 8px #000, 0 3px 16px #000;
+      overflow-wrap: anywhere;
+      pointer-events: none;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 15px;
+    }
+
+    button, .file-button {
+      border: 0;
+      border-radius: 10px;
+      padding: 11px 15px;
+      background: var(--panel2);
+      color: var(--text);
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      transition: opacity .2s, transform .2s;
+    }
+
+    button:hover, .file-button:hover {
+      transform: translateY(-1px);
+      opacity: .9;
+    }
+
+    button.primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    button:disabled {
+      cursor: wait;
+      opacity: .55;
+      transform: none;
+    }
+
+    .file-button {
+      display: inline-block;
+      background: var(--panel2);
+    }
+
+    input[type="file"] { display: none; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      margin: 15px 0 8px;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #0c1324;
+      color: var(--text);
+      font: inherit;
+      outline: none;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      border-color: var(--accent);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 105px;
+      line-height: 1.5;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .range-heading {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 13px;
+      margin-top: 18px;
+    }
+
+    .range-heading span:last-child {
+      color: var(--muted);
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+      margin-top: 8px;
+    }
+
+    .result {
+      min-height: 110px;
+      max-height: 420px;
+      overflow: auto;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      padding: 14px;
+      border-radius: 10px;
+      background: #0c1324;
+      border: 1px solid var(--border);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .result:empty::before {
+      content: "Deine KI-Schnittideen erscheinen hier.";
+      color: var(--muted);
+    }
+
+    .tag {
+      display: inline-block;
+      color: var(--accent2);
+      background: #12302f;
+      border-radius: 7px;
+      padding: 5px 9px;
+      font-size: 11px;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+
+    .footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      padding-top: 10px;
+    }
+
+    @media (max-width: 850px) {
+      .workspace { grid-template-columns: 1fr; }
+      header { padding: 18px 20px; }
+      .video-stage { min-height: 200px; }
+    }
+  </style>
 </head>
+
 <body>
-<header>
-<h1>✦ AI Video Studio</h1>
-<p id="status">JavaScript wird gestartet...</p>
-</header>
+  <header>
+    <div class="logo">✦ AI <span>Video Studio</span></div>
+    <div class="status" id="status">Bereit für dein Video</div>
+  </header>
 
-<main>
-<section class="panel">
-<h2>🎬 Video bearbeiten</h2>
+  <main class="container">
+    <section class="intro">
+      <h1>Deine Videos. Deine Ideen. ✨</h1>
+      <p>
+        Lade ein Video hoch, passe den Look an und nutze Gemini als
+        kreativen Schnittassistenten.
+      </p>
+    </section>
 
-<input id="videoFile" type="file" accept="video/*">
+    <div class="workspace">
+      <section>
+        <div class="panel">
+          <h2>🎬 Videovorschau</h2>
 
-<video id="video" controls playsinline></video>
+          <div class="video-stage" id="videoStage">
+            <div class="empty-state" id="emptyState">
+              <div class="big">🎞️</div>
+              <strong>Dein nächster Clip kommt hier rein</strong>
+              <p class="muted">Wähle unten eine Videodatei aus.</p>
+            </div>
 
-<button id="play">▶ Abspielen / Pause</button>
-<button id="download">Video herunterladen</button>
+            <video id="video" controls playsinline hidden></video>
+            <div class="video-title" id="previewText"></div>
+          </div>
 
-<label>Helligkeit</label>
-<input id="brightness" type="range" min="50" max="150" value="100">
+          <div class="controls">
+            <label class="file-button" for="videoFile">＋ Video auswählen</label>
+            <input id="videoFile" type="file" accept="video/*">
+            <button id="resetVideo">Video entfernen</button>
+          </div>
 
-<label>Kontrast</label>
-<input id="contrast" type="range" min="50" max="150" value="100">
+          <p class="hint" id="fileInfo">
+            Die Videovorschau wird lokal in deinem Browser geöffnet.
+          </p>
+        </div>
 
-<label>Sättigung</label>
-<input id="saturation" type="range" min="0" max="200" value="100">
+        <div class="panel">
+          <h2>🎨 Look anpassen</h2>
 
-<label>Titeltext</label>
-<textarea id="title">Mein AI Video</textarea>
+          <div class="range-heading">
+            <span>Helligkeit</span>
+            <span id="brightnessValue">100%</span>
+          </div>
+          <input id="brightness" type="range" min="50" max="150" value="100">
 
-<label>Textfarbe</label>
-<input id="color" type="color" value="#ffffff">
+          <div class="range-heading">
+            <span>Kontrast</span>
+            <span id="contrastValue">100%</span>
+          </div>
+          <input id="contrast" type="range" min="50" max="180" value="100">
 
-<button id="applyText">Text anzeigen</button>
-<div id="previewText"></div>
-</section>
+          <div class="range-heading">
+            <span>Farbsättigung</span>
+            <span id="saturationValue">100%</span>
+          </div>
+          <input id="saturation" type="range" min="0" max="200" value="100">
 
-<section class="panel">
-<h2>🤖 Gemini KI-Assistent</h2>
+          <label for="filter">Schnellfilter</label>
+          <select id="filter">
+            <option value="none">Original</option>
+            <option value="cinema">Cinema</option>
+            <option value="warm">Warm</option>
+            <option value="bw">Schwarz-Weiß</option>
+            <option value="vintage">Vintage</option>
+          </select>
 
-<p>
-Füge deinen neuen Gemini API-Key ein.
-Der Schlüssel wird nicht in dieser HTML-Datei gespeichert.
-</p>
+          <label for="title">Text im Video</label>
+          <input id="title" type="text" maxlength="100"
+                 placeholder="Dein Titel oder Untertitel">
 
-<label>Gemini API-Key</label>
-<input id="apiKey" type="password"
-placeholder="Gemini API-Key">
+          <div class="controls">
+            <button class="primary" id="applyText">Text aktualisieren</button>
+            <button id="resetLook">Look zurücksetzen</button>
+          </div>
 
-<label>Was soll die KI machen?</label>
-<textarea id="prompt"
-placeholder="Erstelle einen Videotitel und Schnittideen..."></textarea>
+          <p class="hint">
+            Filter und Text werden in der Vorschau angezeigt. Sie verändern
+            nicht automatisch die herunterladbare Originalvideodatei.
+          </p>
+        </div>
+      </section>
 
-<button id="ask">Gemini fragen</button>
-<div id="result">Bereit.</div>
-</section>
-</main>
+      <aside>
+        <div class="panel">
+          <span class="tag">GEMINI AI</span>
+          <h2>🧠 Dein KI-Schnittassistent</h2>
 
-<script>
-(function(){
-"use strict";
+          <p class="muted">
+            Beschreibe, wie dein Video wirken soll. Gemini erstellt Ideen
+            für Schnitt, Tempo, Titel, Untertitel und Übergänge.
+          </p>
 
-const $ = id => document.getElementById(id);
+          <label for="apiKey">Gemini API-Key</label>
+          <input id="apiKey" type="password" autocomplete="off"
+                 placeholder="API-Key hier eingeben">
 
-const video = $("video");
-let videoURL = null;
-let videoName = "video";
+          <p class="hint">
+            Verwende einen neuen Key, falls du deinen alten bereits geteilt
+            hast. Dieser einfache Prototyp speichert den Key nicht dauerhaft,
+            sendet ihn aber direkt von deinem Browser an Google. Für eine
+            veröffentlichte Website solltest du einen eigenen Backend-Server
+            verwenden.
+          </p>
 
-function status(message){
-  $("status").textContent = message;
-}
+          <label for="prompt">Was soll die KI machen?</label>
+          <textarea id="prompt"
+            placeholder="Zum Beispiel: Mach daraus einen dynamischen Gaming-Clip mit schnellen Schnitten, einem starken Einstieg, passenden Untertiteln und einem coolen Ende."></textarea>
 
-status("JavaScript funktioniert!");
+          <div class="controls">
+            <button class="primary" id="ask">✦ Schnittideen erstellen</button>
+            <button id="clearPrompt">Leeren</button>
+          </div>
 
-$("videoFile").addEventListener("change", function(){
-  const file = this.files[0];
-  if(!file) return;
+          <label>Antwort von Gemini</label>
+          <div class="result" id="result" role="status" aria-live="polite"></div>
+        </div>
 
-  if(videoURL) URL.revokeObjectURL(videoURL);
+        <div class="panel">
+          <h2>💡 Schnellstart</h2>
+          <div class="controls">
+            <button class="preset" data-prompt="Erstelle einen Plan für einen dynamischen 30-Sekunden-Clip mit starkem Einstieg, schnellen Schnitten, Texteinblendungen und einem klaren Ende.">Dynamischer Clip</button>
+            <button class="preset" data-prompt="Entwirf einen ruhigen, filmischen Schnittplan mit stimmungsvollen Übergängen, passenden Titeln und einer klaren Dramaturgie.">Cinematic</button>
+            <button class="preset" data-prompt="Erstelle einen Schnittplan für ein kurzes Hochformat-Video mit aufmerksamkeitsstarkem Einstieg, gut lesbaren Untertiteln und knackigem Ende.">Short-Video</button>
+          </div>
+          <p class="hint">
+            Ein Preset füllt das Eingabefeld aus. Drücke danach auf
+            „Schnittideen erstellen“.
+          </p>
+        </div>
+      </aside>
+    </div>
 
-  videoURL = URL.createObjectURL(file);
-  videoName = file.name;
-  video.src = videoURL;
-  video.load();
+    <div class="footer">
+      AI Video Studio · Browser-Prototyp · Gemini API
+    </div>
+  </main>
 
-  status("Video geladen: " + file.name);
-});
+  <script>
+    "use strict";
 
-$("play").addEventListener("click", async function(){
-  if(!video.src){
-    status("Bitte zuerst ein Video auswählen.");
-    return;
-  }
+    const $ = (id) => document.getElementById(id);
 
-  try{
-    if(video.paused){
-      await video.play();
-    }else{
-      video.pause();
+    let videoUrl = null;
+
+    const video = $("video");
+    const videoFile = $("videoFile");
+    const videoStage = $("videoStage");
+
+    function setStatus(message) {
+      $("status").textContent = message;
     }
-  }catch(error){
-    status("Wiedergabefehler: " + error.message);
-  }
-});
 
-$("download").addEventListener("click", function(){
-  if(!videoURL){
-    status("Bitte zuerst ein Video auswählen.");
-    return;
-  }
+    function updateLook() {
+      const brightness = Number($("brightness").value);
+      const contrast = Number($("contrast").value);
+      const saturation = Number($("saturation").value);
+      const filter = $("filter").value;
 
-  const link = document.createElement("a");
-  link.href = videoURL;
-  link.download = videoName;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-});
+      $("brightnessValue").textContent = brightness + "%";
+      $("contrastValue").textContent = contrast + "%";
+      $("saturationValue").textContent = saturation + "%";
 
-function updateFilters(){
-  video.style.filter =
-    "brightness(" + $("brightness").value + "%) " +
-    "contrast(" + $("contrast").value + "%) " +
-    "saturate(" + $("saturation").value + "%)";
-}
+      let extra = "";
 
-["brightness","contrast","saturation"].forEach(id => {
-  $(id).addEventListener("input", updateFilters);
-});
-
-$("applyText").addEventListener("click", function(){
-  $("previewText").textContent = $("title").value;
-  $("previewText").style.color = $("color").value;
-  status("Text aktualisiert.");
-});
-
-$("ask").addEventListener("click", async function(){
-  const key = $("apiKey").value.trim();
-  const prompt = $("prompt").value.trim();
-
-  if(!key){
-    $("result").textContent = "Bitte API-Key eingeben.";
-    return;
-  }
-
-  if(!prompt){
-    $("result").textContent = "Bitte einen Auftrag eingeben.";
-    return;
-  }
-
-  const button = $("ask");
-  button.disabled = true;
-  $("result").textContent = "Gemini wird angefragt...";
-
-  try{
-    const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": key
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text:
-                "Du bist ein Videoeditor-Assistent. " +
-                "Erstelle konkrete Schnittideen, Titel, " +
-                "Untertitel und Übergangsvorschläge auf Deutsch. " +
-                "Du kannst das Video nicht selbst rendern. Auftrag: " +
-                prompt
-            }]
-          }]
-        })
+      if (filter === "cinema") {
+        extra = " sepia(12%)";
+      } else if (filter === "warm") {
+        extra = " sepia(22%)";
+      } else if (filter === "bw") {
+        extra = " grayscale(100%)";
+      } else if (filter === "vintage") {
+        extra = " sepia(35%) saturate(80%)";
       }
-    );
 
-    const data = await response.json();
-
-    if(!response.ok){
-      throw new Error(
-        data.error?.message || "HTTP " + response.status
-      );
+      video.style.filter =
+        `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)${extra}`;
     }
 
-    const answer =
-      data.candidates?.[0]?.content?.parts
-        ?.map(part => part.text || "")
-        .join("\n");
+    function updateTitle() {
+      $("previewText").textContent = $("title").value.trim();
+    }
 
-    $("result").textContent =
-      answer || "Keine Antwort erhalten.";
+    ["brightness", "contrast", "saturation", "filter"].forEach((id) => {
+      $(id).addEventListener("input", updateLook);
+    });
 
-    status("Gemini-Antwort erhalten.");
+    $("title").addEventListener("input", updateTitle);
+    $("applyText").addEventListener("click", updateTitle);
 
-  }catch(error){
-    $("result").textContent =
-      "Fehler: " + error.message +
-      "\nPrüfe API-Key, Modellzugriff und Internetverbindung.";
+    videoFile.addEventListener("change", () => {
+      const file = videoFile.files && videoFile.files[0];
+      if (!file) return;
 
-    status("Gemini-Anfrage fehlgeschlagen.");
+      if (!file.type.startsWith("video/")) {
+        $("fileInfo").textContent = "Bitte wähle eine gültige Videodatei aus.";
+        videoFile.value = "";
+        return;
+      }
 
-  }finally{
-    button.disabled = false;
-  }
-});
+      if (videoUrl) URL.revokeObjectURL(videoUrl);
+      videoUrl = URL.createObjectURL(file);
 
-})();
-</script>
+      video.src = videoUrl;
+      video.hidden = false;
+      $("emptyState").hidden = true;
+
+      $("fileInfo").textContent =
+        `${file.name} · ${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+
+      setStatus("Video geladen");
+    });
+
+    $("resetVideo").addEventListener("click", () => {
+      video.pause();
+      video.removeAttribute("src");
+      video.load();
+
+      if (videoUrl) {
+        URL.revokeObjectURL(videoUrl);
+        videoUrl = null;
+      }
+
+      video.hidden = true;
+      $("emptyState").hidden = false;
+      videoFile.value = "";
+
+      $("fileInfo").textContent =
+        "Die Videovorschau wird lokal in deinem Browser geöffnet.";
+
+      setStatus("Bereit für dein Video");
+    });
+
+    $("resetLook").addEventListener("click", () => {
+      $("brightness").value = 100;
+      $("contrast").value = 100;
+      $("saturation").value = 100;
+      $("filter").value = "none";
+      $("title").value = "";
+
+      updateLook();
+      updateTitle();
+    });
+
+    $("clearPrompt").addEventListener("click", () => {
+      $("prompt").value = "";
+      $("result").textContent = "";
+    });
+
+    document.querySelectorAll(".preset").forEach((button) => {
+      button.addEventListener("click", () => {
+        $("prompt").value = button.dataset.prompt;
+        $("prompt").focus();
+      });
+    });
+
+    function extractAnswer(data) {
+      // Unterstützt unterschiedliche Antwortformen der API.
+      if (typeof data.output_text === "string" && data.output_text.trim()) {
+        return data.output_text.trim();
+      }
+
+      if (Array.isArray(data.steps)) {
+        return data.steps
+          .filter(step => step.type === "model_output")
+          .flatMap(step => Array.isArray(step.content) ? step.content : [])
+          .filter(item => item.type === "text")
+          .map(item => item.text || "")
+          .join("\n")
+          .trim();
+      }
+
+      if (Array.isArray(data.output)) {
+        return data.output
+          .flatMap(item => Array.isArray(item.content) ? item.content : [])
+          .filter(item => item.type === "text")
+          .map(item => item.text || "")
+          .join("\n")
+          .trim();
+      }
+
+      return "";
+    }
+
+    $("ask").addEventListener("click", async () => {
+      const key = $("apiKey").value.trim();
+      const prompt = $("prompt").value.trim();
+      const button = $("ask");
+
+      if (!key) {
+        $("result").textContent = "Bitte gib deinen Gemini API-Key ein.";
+        $("apiKey").focus();
+        return;
+      }
+
+      if (!prompt) {
+        $("result").textContent = "Bitte beschreibe zuerst deinen Schnittwunsch.";
+        $("prompt").focus();
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = "⏳ Gemini arbeitet ...";
+      $("result").textContent = "Deine Schnittideen werden erstellt ...";
+      setStatus("Verbinde mit Gemini ...");
+
+      try {
+        const response = await fetch(
+          "https://generativelanguage.googleapis.com/v1beta/interactions",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-goog-api-key": key
+            },
+            body: JSON.stringify({
+              model: "gemini-3.8-flash",
+              input:
+                "Du bist ein professioneller Videoeditor-Assistent. " +
+                "Antworte auf Deutsch und liefere einen klar strukturierten, " +
+                "praktischen Schnittplan mit Zeitabschnitten, Schnittideen, " +
+                "Titeln, Untertiteln und Übergängen. Erfinde keine Details " +
+                "über den tatsächlichen Videoinhalt, da du die Datei hier " +
+                "nicht analysierst. Weise darauf hin, wenn dir dafür " +
+                "Informationen zum Clip fehlen.\n\nAuftrag:\n" + prompt,
+              store: false
+            })
+          }
+        );
+
+        const raw = await response.text();
+        let data;
+
+        try {
+          data = JSON.parse(raw);
+        } catch {
+          throw new Error(
+            "Die API hat keine gültige JSON-Antwort zurückgegeben. HTTP " +
+            response.status
+          );
+        }
+
+        if (!response.ok) {
+          const message =
+            data.error?.message ||
+            data.message ||
+            ("HTTP " + response.status);
+
+          throw new Error(message);
+        }
+
+        const answer = extractAnswer(data);
+
+        if (!answer) {
+          $("result").textContent =
+            "Die Anfrage war erfolgreich, aber es wurde kein Text gefunden. " +
+            "API-Antwort zur Diagnose:\n" +
+            JSON.stringify(data, null, 2);
+        } else {
+          $("result").textContent = answer;
+        }
+
+        setStatus("Gemini-Antwort erhalten");
+      } catch (error) {
+        $("result").textContent =
+          "Fehler bei der Gemini-Anfrage:\n\n" +
+          (error.message || String(error)) +
+          "\n\nPrüfe den API-Key, den Modellzugriff und die Internetverbindung. " +
+          "Wenn eine CORS- oder Netzwerkfehlermeldung erscheint, teste die " +
+          "Seite über einen lokalen Webserver oder nutze einen sicheren Backend-Server.";
+
+        setStatus("Gemini-Verbindung fehlgeschlagen");
+      } finally {
+        button.disabled = false;
+        button.textContent = "✦ Schnittideen erstellen";
+      }
+    });
+
+    updateLook();
+    updateTitle();
+  </script>
 </body>
 </html>
