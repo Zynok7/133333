@@ -2,197 +2,252 @@
 <html lang="de">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Meine lokale Bild-KI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Meine lokale KI</title>
   <style>
+    * { box-sizing: border-box; }
+
     body {
-      max-width: 650px;
-      margin: 30px auto;
-      padding: 0 16px;
-      font: 17px system-ui, sans-serif;
-      background: #f4f6f8;
+      margin: 0;
+      font-family: system-ui, sans-serif;
       color: #17202a;
+      background: #eef1f5;
     }
-    h1 { font-size: 1.6rem; }
-    section {
-      margin: 16px 0;
-      padding: 16px;
-      border-radius: 12px;
+
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 14px 16px;
+      padding-top: max(14px, env(safe-area-inset-top));
+      background: #173c61;
+      color: white;
+      z-index: 2;
+    }
+
+    header h1 { margin: 0; font-size: 19px; }
+    header p { margin: 3px 0 0; font-size: 12px; opacity: .85; }
+
+    #chat {
+      height: 100dvh;
+      overflow-y: auto;
+      padding: 82px 12px 105px;
+    }
+
+    .message {
+      width: fit-content;
+      max-width: 88%;
+      margin: 10px 0;
+      padding: 11px 14px;
+      border-radius: 16px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      line-height: 1.4;
+    }
+
+    .user {
+      margin-left: auto;
+      background: #1769aa;
+      color: white;
+      border-bottom-right-radius: 5px;
+    }
+
+    .bot {
+      margin-right: auto;
       background: white;
+      border-bottom-left-radius: 5px;
+      box-shadow: 0 1px 3px #0001;
     }
-    input, button {
-      box-sizing: border-box;
-      width: 100%;
-      margin-top: 10px;
+
+    #bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      gap: 8px;
+      padding: 10px 12px;
+      padding-bottom: max(10px, env(safe-area-inset-bottom));
+      background: white;
+      border-top: 1px solid #d5dbe1;
+    }
+
+    #text {
+      flex: 1;
+      min-width: 0;
       padding: 12px;
+      border: 1px solid #c5ccd4;
+      border-radius: 22px;
+      font: inherit;
+      font-size: 16px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 22px;
+      padding: 0 18px;
+      background: #1769aa;
+      color: white;
       font: inherit;
     }
-    button { border: 0; border-radius: 8px; background: #1769aa; color: white; }
-    #preview { max-width: 100%; max-height: 300px; margin-top: 12px; }
-    #result { white-space: pre-wrap; }
-    .small { color: #536273; font-size: 0.92rem; }
+
+    #clear {
+      position: fixed;
+      right: 12px;
+      top: 52px;
+      z-index: 3;
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: #ffffff22;
+      font-size: 12px;
+    }
   </style>
 </head>
 <body>
-  <h1>Meine lokale Bild-KI</h1>
-  <p class="small">Funktioniert auf diesem Gerät. Keine API, kein Upload.</p>
+  <header>
+    <h1>Meine lokale KI</h1>
+    <p>Chat und Gedächtnis bleiben in diesem Browser gespeichert.</p>
+  </header>
 
-  <section>
-    <h2>Beispiel hinzufügen</h2>
-    <input id="file" type="file" accept="image/*">
-    <img id="preview" alt="Bildvorschau" hidden>
-    <input id="caption" type="text" placeholder="Was ist auf dem Bild?">
-    <button id="learn">Beispiel lernen</button>
-  </section>
+  <button id="clear">Chat löschen</button>
+  <main id="chat" aria-live="polite"></main>
 
-  <section>
-    <h2>Bild erkennen</h2>
-    <button id="predict">Bild erkennen</button>
-    <p id="result">Lerne zuerst ein paar Beispiele.</p>
-  </section>
-
-  <section>
-    <button id="clear">Alle gelernten Beispiele löschen</button>
-    <p id="count" class="small"></p>
-  </section>
-
-  <canvas id="canvas" width="32" height="32" hidden></canvas>
+  <form id="bar">
+    <input id="text" autocomplete="off"
+           placeholder="Schreib eine Nachricht…" aria-label="Nachricht">
+    <button type="submit">Senden</button>
+  </form>
 
 <script>
-  // Jede Bildbeschreibung wird mit einfachen Farbmerkmalen verknüpft.
-  // Die Merkmale bestehen aus 4 x 4 Bildbereichen mit je RGB-Mittelwerten.
-  const STORAGE_KEY = "meine-lokale-bild-ki-v1";
-  const fileInput = document.getElementById("file");
-  const captionInput = document.getElementById("caption");
-  const preview = document.getElementById("preview");
-  const result = document.getElementById("result");
-  const count = document.getElementById("count");
-  const canvas = document.getElementById("canvas");
-  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  const KEY = "ipad-lokale-ki-chat-v1";
+  const chat = document.getElementById("chat");
+  const form = document.getElementById("bar");
+  const input = document.getElementById("text");
 
-  let currentImage = null;
-  let examples = loadExamples();
+  let messages = [];
+  try {
+    messages = JSON.parse(localStorage.getItem(KEY) || "[]");
+  } catch {
+    messages = [];
+  }
 
-  function loadExamples() {
+  function save() {
     try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      localStorage.setItem(KEY, JSON.stringify(messages));
     } catch {
-      return [];
+      addMessage("System", "Der Browser-Speicher ist voll. Lösche alte Chats.");
     }
   }
 
-  function saveExamples() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(examples));
-    } catch {
-      result.textContent =
-        "Der Browser konnte die Beispiele nicht speichern. Probiere es in einem normalen Safari-Tab.";
-    }
-    count.textContent = `Gelernte Beispiele: ${examples.length}`;
+  function addMessage(role, text) {
+    messages.push({ role, text, time: Date.now() });
+    save();
+    showMessage(role, text);
   }
 
-  function getFeatures(image) {
-    ctx.clearRect(0, 0, 32, 32);
-    ctx.drawImage(image, 0, 0, 32, 32);
-    const pixels = ctx.getImageData(0, 0, 32, 32).data;
-    const features = [];
+  function showMessage(role, text) {
+    const bubble = document.createElement("div");
+    bubble.className = "message " + (role === "Du" ? "user" : "bot");
+    bubble.textContent = text;
+    chat.appendChild(bubble);
+    chat.scrollTop = chat.scrollHeight;
+  }
 
-    for (let cellY = 0; cellY < 4; cellY++) {
-      for (let cellX = 0; cellX < 4; cellX++) {
-        let r = 0, g = 0, b = 0, n = 0;
+  // Einfache lokale Erinnerung: sucht nach früheren Nachrichten
+  // mit gemeinsamen bedeutungsvollen Wörtern.
+  function findMemory(query) {
+    const words = query.toLowerCase()
+      .replace(/[^\p{L}\p{N}\s]/gu, " ")
+      .split(/\s+/)
+      .filter(w => w.length > 3);
 
-        for (let y = cellY * 8; y < cellY * 8 + 8; y++) {
-          for (let x = cellX * 8; x < cellX * 8 + 8; x++) {
-            const i = (y * 32 + x) * 4;
-            r += pixels[i];
-            g += pixels[i + 1];
-            b += pixels[i + 2];
-            n++;
-          }
-        }
+    if (!words.length) return null;
 
-        features.push(r / n / 255, g / n / 255, b / n / 255);
+    const candidates = messages.filter(m =>
+      m.role === "Du" &&
+      m.text.toLowerCase() !== query.toLowerCase()
+    );
+
+    let best = null;
+    let bestScore = 0;
+
+    for (const m of candidates) {
+      const old = m.text.toLowerCase();
+      const score = words.reduce((n, word) => n + (old.includes(word) ? 1 : 0), 0);
+      if (score > bestScore) {
+        best = m.text;
+        bestScore = score;
       }
     }
-    return features;
+
+    return bestScore > 0 ? best : null;
   }
 
-  function cosineSimilarity(a, b) {
-    let dot = 0, aa = 0, bb = 0;
-    for (let i = 0; i < a.length; i++) {
-      dot += a[i] * b[i];
-      aa += a[i] * a[i];
-      bb += b[i] * b[i];
+  function think(text) {
+    const t = text.toLowerCase().trim();
+
+    if (/^(hi|hallo|hey|guten morgen|guten tag)\b/.test(t)) {
+      return "Hallo! Schreib mir etwas. Ich speichere unseren Chat in diesem Browser.";
     }
-    return dot / (Math.sqrt(aa * bb) + 1e-8);
+
+    if (t.includes("wie heißt du")) {
+      return "Ich bin deine lokale KI. Du kannst den Namen im HTML-Code ändern.";
+    }
+
+    if (t.includes("was weißt du über mich") || t.includes("was erinnerst du")) {
+      const past = messages
+        .filter(m => m.role === "Du")
+        .slice(-5)
+        .map(m => "• " + m.text);
+
+      return past.length
+        ? "Diese letzten Nachrichten von dir kann ich im Chatverlauf sehen:\n" + past.join("\n")
+        : "Ich habe noch keine Nachrichten von dir gespeichert.";
+    }
+
+    const memory = findMemory(t);
+    if (memory) {
+      return "Das erinnert mich an eine frühere Nachricht von dir:\n„" +
+        memory + "“\n\nIch kann einfache Ähnlichkeiten im gespeicherten Chat finden, aber noch nicht frei darüber nachdenken.";
+    }
+
+    if (t.endsWith("?")) {
+      return "Ich habe deine Frage gespeichert, kann sie aber ohne ein eingebautes Sprachmodell nicht zuverlässig beantworten. Ich kann mich an Nachrichten erinnern, die du hier schreibst.";
+    }
+
+    return "Ich habe das gespeichert. Meine jetzige Denkfunktion ist noch einfach: Sie kann den Chat behalten und ähnliche frühere Nachrichten suchen.";
   }
 
-  fileInput.addEventListener("change", () => {
-    const file = fileInput.files && fileInput.files[0];
-    if (!file) return;
-
-    const image = new Image();
-    image.onload = () => {
-      currentImage = image;
-      preview.src = image.src;
-      preview.hidden = false;
-      URL.revokeObjectURL(image.src);
-      result.textContent = "Bild geladen. Du kannst es erkennen lassen oder als Beispiel speichern.";
-    };
-    image.onerror = () => {
-      result.textContent = "Das Bild konnte nicht geöffnet werden.";
-    };
-    image.src = URL.createObjectURL(file);
-  });
-
-  document.getElementById("learn").addEventListener("click", () => {
-    const caption = captionInput.value.trim();
-    if (!currentImage) {
-      result.textContent = "Wähle zuerst ein Bild aus.";
+  function renderSaved() {
+    chat.innerHTML = "";
+    if (!messages.length) {
+      showMessage("KI", "Hallo! Ich bin deine lokale Chat-KI. Schreib mir unten eine Nachricht.");
       return;
     }
-    if (!caption) {
-      result.textContent = "Schreibe zuerst eine kurze Bildbeschreibung.";
-      return;
-    }
+    for (const m of messages) showMessage(m.role, m.text);
+  }
 
-    examples.push({ caption, features: getFeatures(currentImage) });
-    saveExamples();
-    result.textContent = `Gelernt: „${caption}“`;
-    captionInput.value = "";
-  });
+  form.addEventListener("submit", event => {
+    event.preventDefault();
+    const text = input.value.trim();
+    if (!text) return;
 
-  document.getElementById("predict").addEventListener("click", () => {
-    if (!currentImage) {
-      result.textContent = "Wähle zuerst ein Bild aus.";
-      return;
-    }
-    if (!examples.length) {
-      result.textContent = "Lerne erst Beispiele mit Bildbeschreibungen.";
-      return;
-    }
+    input.value = "";
+    addMessage("Du", text);
 
-    const features = getFeatures(currentImage);
-    const best = examples
-      .map(example => ({
-        caption: example.caption,
-        score: cosineSimilarity(features, example.features)
-      }))
-      .sort((a, b) => b.score - a.score)[0];
-
-    result.textContent =
-      `Meine Vermutung: „${best.caption}“\n` +
-      `Ähnlichkeit zum besten Beispiel: ${Math.round(best.score * 100)} %`;
+    const answer = think(text);
+    addMessage("KI", answer);
   });
 
   document.getElementById("clear").addEventListener("click", () => {
-    examples = [];
-    localStorage.removeItem(STORAGE_KEY);
-    saveExamples();
-    result.textContent = "Alle Beispiele wurden gelöscht.";
+    if (!confirm("Den gespeicherten Chat wirklich löschen?")) return;
+    messages = [];
+    localStorage.removeItem(KEY);
+    renderSaved();
   });
 
-  saveExamples();
+  renderSaved();
 </script>
 </body>
 </html>
