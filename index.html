@@ -1,270 +1,236 @@
+
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Lokal-Chat v2</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Video Studio</title>
 <style>
-:root{--bg:#f2f3f8;--pane:#ffffffcc;--text:#1c1c1e;--mute:#6e6e73;--a1:#6a5cff;--a2:#00b4ff;--bot:#fff;--line:#e2e3ea;--sh:0 2px 10px #0000001a}
-@media(prefers-color-scheme:dark){:root{--bg:#0d0e14;--pane:#1a1b24cc;--text:#f2f2f7;--mute:#9a9aa5;--bot:#23242f;--line:#2f3040;--sh:0 2px 10px #0000008a}}
 *{box-sizing:border-box}
-html,body{height:100%;margin:0}
-body{font:17px -apple-system,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-header{display:flex;gap:8px;align-items:center;padding:10px 14px;background:linear-gradient(135deg,var(--a1),var(--a2));color:#fff;box-shadow:var(--sh)}
-header b{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:18px}
-button,select{font:inherit;padding:9px 14px;border-radius:14px;border:1px solid var(--line);background:var(--bot);color:var(--text)}
-header button,header select{background:#ffffff30;color:#fff;border:0;max-width:170px}
-header select option{color:#000}
-button.p{background:linear-gradient(135deg,var(--a1),var(--a2));color:#fff;border:0;font-weight:600}
-button.d{color:#ff453a}
-#main{flex:1;display:flex;min-height:0;position:relative}
-#side{width:290px;max-width:85%;background:var(--bot);border-right:1px solid var(--line);display:none;flex-direction:column;padding:12px;gap:8px;overflow:auto;position:absolute;top:0;bottom:0;left:0;z-index:5;box-shadow:var(--sh)}
-#side.open{display:flex}
-.chat{display:flex;gap:6px;align-items:center}
-.chat span{flex:1;padding:9px 10px;border-radius:12px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.chat.act span{background:var(--bg);font-weight:600}
-#msgs{flex:1;overflow:auto;padding:16px 14px;display:flex;flex-direction:column;gap:10px}
-.row{display:flex;gap:8px;align-items:flex-end;max-width:100%}
-.row.me{justify-content:flex-end}
-.av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--a1),var(--a2));display:flex;align-items:center;justify-content:center;font-size:16px;flex:none}
-.m{max-width:78%;padding:10px 14px;border-radius:20px;white-space:pre-wrap;word-wrap:break-word;box-shadow:var(--sh);line-height:1.35}
-.me .m{background:linear-gradient(135deg,var(--a1),var(--a2));color:#fff;border-bottom-right-radius:6px}
-.bot .m{background:var(--bot);border-bottom-left-radius:6px}
-.m a{display:block;margin-top:6px;font-size:14px;color:var(--a1)}
-.dots span{display:inline-block;width:8px;height:8px;margin:0 2px;border-radius:50%;background:var(--mute);animation:b 1s infinite}
-.dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}
-@keyframes b{0%,80%,100%{opacity:.25}40%{opacity:1}}
-.hint{margin:auto;text-align:center;padding:20px;color:var(--mute)}
-.hint h2{margin:0 0 6px;color:var(--text)}
-.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px}
-.chips button{border-radius:20px;font-size:15px;box-shadow:var(--sh)}
-footer{display:flex;gap:8px;padding:10px 12px;background:var(--pane);backdrop-filter:blur(12px);border-top:1px solid var(--line)}
-textarea{flex:1;font:inherit;padding:10px 14px;border-radius:20px;border:1px solid var(--line);background:var(--bot);color:var(--text);resize:none;max-height:120px}
-#warn{background:#ff9f0a;color:#000;padding:6px 12px;font-size:14px;display:none}
-#bk{display:none;position:absolute;inset:0;background:var(--bg);z-index:9;padding:14px;flex-direction:column;gap:8px}
-#bk textarea{border-radius:12px;flex:1;max-height:none}
+body{margin:0;background:#08111f;color:#eef5ff;font:16px Arial,sans-serif}
+header{padding:18px;background:#10233b;border-bottom:1px solid #294766}
+h1{margin:0;font-size:24px}
+main{max-width:1000px;margin:auto;padding:16px;display:grid;gap:16px}
+.panel{background:#102038;border:1px solid #294766;border-radius:12px;padding:16px}
+button,.file-button{display:inline-block;background:#1769ed;color:white;border:0;border-radius:8px;padding:12px;margin:4px;cursor:pointer;font-weight:bold}
+button:hover,.file-button:hover{background:#3585ff}
+input,textarea,select{width:100%;padding:12px;margin:6px 0;background:#071525;color:white;border:1px solid #365574;border-radius:7px}
+textarea{min-height:100px}
+video{width:100%;max-height:420px;background:#000;margin-top:12px}
+#status{color:#70e4b8}
+#result{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5}
+#previewText{font-size:28px;font-weight:bold;text-align:center;white-space:pre-wrap}
+label{display:block;margin-top:12px}
 </style>
 </head>
 <body>
-<div id="warn"></div>
 <header>
-  <button id="menu">☰</button>
-  <b id="title">Lokal-Chat</b>
-  <select id="brain" title="Gehirn"></select>
+<h1>✦ AI Video Studio</h1>
+<p id="status">JavaScript wird gestartet...</p>
 </header>
-<div id="main">
-  <div id="side">
-    <button class="p" id="new">+ Neuer Chat</button>
-    <div id="list"></div>
-    <button id="backup">Sichern / Laden</button>
-    <button class="d" id="wipe">Alle Chats löschen</button>
-  </div>
-  <div id="msgs"></div>
-  <div id="bk">
-    <b>Sichern / Laden</b>
-    <div style="color:var(--mute);font-size:14px">„Backup erzeugen“ füllt das Feld. Text kopieren und z. B. in Notizen sichern. Zum Laden Text einfügen und „Laden“ tippen (ersetzt alle aktuellen Chats).</div>
-    <textarea id="bkText"></textarea>
-    <div style="display:flex;gap:8px"><button id="bkMake">Backup erzeugen</button><button id="bkLoad" class="p">Laden</button><button id="bkClose">Schließen</button></div>
-  </div>
-</div>
-<footer>
-  <textarea id="inp" rows="1" placeholder="Nachricht schreiben …"></textarea>
-  <button class="p" id="send">Senden</button>
-</footer>
+
+<main>
+<section class="panel">
+<h2>🎬 Video bearbeiten</h2>
+
+<input id="videoFile" type="file" accept="video/*">
+
+<video id="video" controls playsinline></video>
+
+<button id="play">▶ Abspielen / Pause</button>
+<button id="download">Video herunterladen</button>
+
+<label>Helligkeit</label>
+<input id="brightness" type="range" min="50" max="150" value="100">
+
+<label>Kontrast</label>
+<input id="contrast" type="range" min="50" max="150" value="100">
+
+<label>Sättigung</label>
+<input id="saturation" type="range" min="0" max="200" value="100">
+
+<label>Titeltext</label>
+<textarea id="title">Mein AI Video</textarea>
+
+<label>Textfarbe</label>
+<input id="color" type="color" value="#ffffff">
+
+<button id="applyText">Text anzeigen</button>
+<div id="previewText"></div>
+</section>
+
+<section class="panel">
+<h2>🤖 Gemini KI-Assistent</h2>
+
+<p>
+Füge deinen neuen Gemini API-Key ein.
+Der Schlüssel wird nicht in dieser HTML-Datei gespeichert.
+</p>
+
+<label>Gemini API-Key</label>
+<input id="apiKey" type="password"
+placeholder="Gemini API-Key">
+
+<label>Was soll die KI machen?</label>
+<textarea id="prompt"
+placeholder="Erstelle einen Videotitel und Schnittideen..."></textarea>
+
+<button id="ask">Gemini fragen</button>
+<div id="result">Bereit.</div>
+</section>
+</main>
 
 <script>
-// ===== 1. SPEICHER (localStorage, lokal im Browser) =====
-var KEY = "lokalchat_v1";   // gleicher Schlüssel wie Version 1: alte Chats bleiben erhalten
-var state = { chats: [], current: null, name: "" };
-var storageOK = true, pending = false;
+(function(){
+"use strict";
 
-function load() {
-  try { var raw = localStorage.getItem(KEY); if (raw) state = JSON.parse(raw); }
-  catch (e) { storageOK = false; }
-}
-function save() {
-  try { localStorage.setItem(KEY, JSON.stringify(state)); storageOK = true; }
-  catch (e) { storageOK = false; }
-  var w = document.getElementById("warn");
-  if (!storageOK) {
-    w.style.display = "block";
-    w.textContent = "Achtung: Speichern nicht möglich. Chats gehen beim Schließen verloren. Nutze „Sichern / Laden“.";
-  } else { w.style.display = "none"; }
+const $ = id => document.getElementById(id);
+
+const video = $("video");
+let videoURL = null;
+let videoName = "video";
+
+function status(message){
+  $("status").textContent = message;
 }
 
-// ===== 2. REGELN (offline, kein Sprachmodell) =====
-// Gibt Text zurück oder null, wenn keine Regel passt.
-function rules(text) {
-  var t = text.trim(), l = t.toLowerCase(), m;
-  if ((m = l.match(/ich hei(ß|ss)e\s+([^\s.,!?]+)/))) {
-    state.name = m[2].charAt(0).toUpperCase() + m[2].slice(1);
-    return "Schön, dich kennenzulernen, " + state.name + "!";
-  }
-  if (/wie hei(ß|ss)e ich/.test(l))
-    return state.name ? "Du heißt " + state.name + "." : "Das weiß ich noch nicht. Sag: „Ich heiße …“";
-  if (/\b(hallo|hi|hey|moin|servus|guten (tag|morgen|abend))\b/.test(l))
-    return "Hallo" + (state.name ? " " + state.name : "") + "! Wie kann ich helfen?";
-  if (/uhr|wie spät/.test(l)) return "Es ist " + new Date().toLocaleTimeString("de-DE") + " Uhr.";
-  if (/datum|welcher tag|welches datum/.test(l))
-    return "Heute ist " + new Date().toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) + ".";
-  if (/witz/.test(l)) return "Warum nehmen Programmierer die Treppe? Weil der Aufzug einen Bug hat.";
-  if (/wie geht/.test(l)) return "Mir geht es gut, ich bin ja nur ein paar Regeln im Browser.";
-  if (/(danke|dankeschön)/.test(l)) return "Gern geschehen!";
-  if (/(tschüss|tschuess|bye|ciao)/.test(l)) return "Bis bald!";
-  var calc = t.replace(/,/g, ".").replace(/[x×]/gi, "*").replace(/:/g, "/");
-  if (/^[\d\s+\-*\/().]+$/.test(calc) && /\d/.test(calc) && /[+\-*\/]/.test(calc)) {
-    try {
-      var r = Function('"use strict";return (' + calc + ")")();
-      if (isFinite(r)) return "= " + String(r).replace(".", ",");
-    } catch (e) {}
-  }
-  if (/wer bist du|was bist du|was kannst du/.test(l))
-    return "Ich bin ein einfaches Regelprogramm, keine echte KI. Ich grüße, nenne Uhrzeit und Datum, rechne (z. B. 12*3), merke mir deinen Namen und erzähle einen Witz. Mit dem Gehirn „Regeln + Wikipedia“ schlage ich Begriffe nach, solange die App offen ist und du online bist.";
-  return null;
-}
+status("JavaScript funktioniert!");
 
-// ===== 3. WIKIPEDIA-SUCHE (braucht Internet, nur bei offener App) =====
-function wiki(q) {
-  var url = "https://de.wikipedia.org/w/api.php?action=query&format=json&origin=*" +
-    "&generator=search&gsrlimit=1&gsrsearch=" + encodeURIComponent(q) +
-    "&prop=extracts&exintro=1&explaintext=1&exsentences=3";
-  return fetch(url).then(function (r) { return r.json(); }).then(function (d) {
-    var pages = d.query && d.query.pages;
-    if (!pages) return null;
-    var p = pages[Object.keys(pages)[0]];
-    if (!p || !p.extract) return null;
-    return { text: p.extract, link: "https://de.wikipedia.org/wiki/" + encodeURIComponent(p.title.replace(/ /g, "_")), linkText: "Quelle: Wikipedia – " + p.title };
-  });
-}
+$("videoFile").addEventListener("change", function(){
+  const file = this.files[0];
+  if(!file) return;
 
-// ===== 4. GEHIRNE (austauschbar): reply(text) -> Promise<string | {text, link, linkText}> =====
-var NOPE = "Das verstehe ich nicht. Ich bin nur eine Regel-Demo. Probiere: „Hallo“, „Wie spät ist es?“, „12*3“ oder „Erzähl einen Witz“.";
-var brains = {
-  wiki: {
-    name: "Regeln + Wikipedia (online)",
-    reply: function (text) {
-      var r = rules(text);
-      if (r !== null) return Promise.resolve(r);
-      var m = text.trim().match(/^(suche|such|google|was ist|was sind|wer ist|wer war|erkläre|erkläre mir)\s+(.+)/i);
-      var q = (m ? m[2] : text).replace(/[?!.]+$/, "");
-      return wiki(q).then(function (res) {
-        return res || "Dazu habe ich bei Wikipedia nichts gefunden.";
-      }).catch(function () {
-        return "Websuche nicht möglich (kein Internet oder Zugriff blockiert). Offline kann ich nur die Regeln.";
-      });
-    }
-  },
-  regeln: {
-    name: "Regeln (offline)",
-    reply: function (text) { var r = rules(text); return Promise.resolve(r !== null ? r : NOPE); }
-  },
-  echo: {
-    name: "Echo (Test)",
-    reply: function (text) { return Promise.resolve("Du hast gesagt: " + text); }
-  }
-};
+  if(videoURL) URL.revokeObjectURL(videoURL);
 
-// ===== 5. CHAT-LOGIK =====
-function $(id) { return document.getElementById(id); }
-function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
-function cur() {
-  for (var i = 0; i < state.chats.length; i++) if (state.chats[i].id === state.current) return state.chats[i];
-  return null;
-}
-function newChat() {
-  var c = { id: uid(), title: "Neuer Chat", msgs: [] };
-  state.chats.unshift(c); state.current = c.id; save(); render();
-}
-function delChat(id) {
-  if (!confirm("Diesen Chat löschen?")) return;
-  state.chats = state.chats.filter(function (c) { return c.id !== id; });
-  if (state.current === id) state.current = state.chats.length ? state.chats[0].id : null;
-  save(); render();
-}
-function addRow(box, role, content) {
-  var row = document.createElement("div"); row.className = "row " + role;
-  if (role === "bot") { var av = document.createElement("div"); av.className = "av"; av.textContent = "🤖"; row.appendChild(av); }
-  var b = document.createElement("div"); b.className = "m";
-  if (content === null) { b.innerHTML = '<span class="dots"><span></span><span></span><span></span></span>'; }
-  else {
-    b.appendChild(document.createTextNode(content.text));
-    if (content.link) {
-      var a = document.createElement("a"); a.href = content.link; a.target = "_blank"; a.rel = "noopener";
-      a.textContent = content.linkText || content.link; b.appendChild(a);
-    }
-  }
-  row.appendChild(b); box.appendChild(row);
-}
-function render() {
-  var c = cur();
-  $("title").textContent = c ? c.title : "Lokal-Chat";
-  var list = $("list"); list.innerHTML = "";
-  state.chats.forEach(function (ch) {
-    var row = document.createElement("div"); row.className = "chat" + (ch.id === state.current ? " act" : "");
-    var s = document.createElement("span"); s.textContent = ch.title;
-    s.onclick = function () { state.current = ch.id; save(); render(); $("side").classList.remove("open"); };
-    var d = document.createElement("button"); d.textContent = "🗑"; d.className = "d";
-    d.onclick = function () { delChat(ch.id); };
-    row.appendChild(s); row.appendChild(d); list.appendChild(row);
-  });
-  var box = $("msgs"); box.innerHTML = "";
-  if (!c || !c.msgs.length) {
-    var h = document.createElement("div"); h.className = "hint";
-    h.innerHTML = "<h2>Hallo! 👋</h2>Ich bin eine einfache Regel-KI, kein Sprachmodell.";
-    var chips = document.createElement("div"); chips.className = "chips";
-    ["Hallo", "Wie spät ist es?", "12*3", "Was ist ein Papagei?", "Erzähl einen Witz"].forEach(function (s) {
-      var b = document.createElement("button"); b.textContent = s;
-      b.onclick = function () { $("inp").value = s; send(); };
-      chips.appendChild(b);
-    });
-    h.appendChild(chips); box.appendChild(h);
-  } else {
-    c.msgs.forEach(function (m) { addRow(box, m.role === "user" ? "me" : "bot", m); });
-  }
-  if (pending) addRow(box, "bot", null);
-  box.scrollTop = box.scrollHeight;
-}
-function send() {
-  var inp = $("inp"), text = inp.value.trim();
-  if (!text || pending) return;
-  if (!cur()) newChat();
-  var c = cur();
-  c.msgs.push({ role: "user", text: text });
-  if (c.msgs.length === 1) c.title = text.slice(0, 30);
-  inp.value = ""; inp.style.height = "auto";
-  pending = true; save(); render();
-  function done(ans) {
-    if (typeof ans === "string") ans = { text: ans };
-    c.msgs.push({ role: "bot", text: ans.text, link: ans.link, linkText: ans.linkText });
-    pending = false; save(); render();
-  }
-  brains[$("brain").value].reply(text, c).then(done).catch(function (e) { done("Fehler im Gehirn: " + e); });
-}
+  videoURL = URL.createObjectURL(file);
+  videoName = file.name;
+  video.src = videoURL;
+  video.load();
 
-// ===== 6. START =====
-load();
-Object.keys(brains).forEach(function (k) {
-  var o = document.createElement("option"); o.value = k; o.textContent = brains[k].name; $("brain").appendChild(o);
+  status("Video geladen: " + file.name);
 });
-$("menu").onclick = function () { $("side").classList.toggle("open"); };
-$("new").onclick = function () { newChat(); $("side").classList.remove("open"); };
-$("send").onclick = send;
-$("inp").addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } });
-$("inp").addEventListener("input", function () { this.style.height = "auto"; this.style.height = Math.min(this.scrollHeight, 120) + "px"; });
-$("wipe").onclick = function () {
-  if (confirm("ALLE Chats unwiderruflich löschen?")) { state = { chats: [], current: null, name: "" }; save(); render(); }
-};
-$("backup").onclick = function () { $("bk").style.display = "flex"; };
-$("bkClose").onclick = function () { $("bk").style.display = "none"; };
-$("bkMake").onclick = function () { $("bkText").value = JSON.stringify(state); };
-$("bkLoad").onclick = function () {
-  try {
-    var d = JSON.parse($("bkText").value);
-    if (!d || !Array.isArray(d.chats)) throw 0;
-    state = d; save(); render(); $("bk").style.display = "none"; alert("Backup geladen.");
-  } catch (e) { alert("Das ist kein gültiges Backup."); }
-};
-save(); render();
+
+$("play").addEventListener("click", async function(){
+  if(!video.src){
+    status("Bitte zuerst ein Video auswählen.");
+    return;
+  }
+
+  try{
+    if(video.paused){
+      await video.play();
+    }else{
+      video.pause();
+    }
+  }catch(error){
+    status("Wiedergabefehler: " + error.message);
+  }
+});
+
+$("download").addEventListener("click", function(){
+  if(!videoURL){
+    status("Bitte zuerst ein Video auswählen.");
+    return;
+  }
+
+  const link = document.createElement("a");
+  link.href = videoURL;
+  link.download = videoName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+});
+
+function updateFilters(){
+  video.style.filter =
+    "brightness(" + $("brightness").value + "%) " +
+    "contrast(" + $("contrast").value + "%) " +
+    "saturate(" + $("saturation").value + "%)";
+}
+
+["brightness","contrast","saturation"].forEach(id => {
+  $(id).addEventListener("input", updateFilters);
+});
+
+$("applyText").addEventListener("click", function(){
+  $("previewText").textContent = $("title").value;
+  $("previewText").style.color = $("color").value;
+  status("Text aktualisiert.");
+});
+
+$("ask").addEventListener("click", async function(){
+  const key = $("apiKey").value.trim();
+  const prompt = $("prompt").value.trim();
+
+  if(!key){
+    $("result").textContent = "Bitte API-Key eingeben.";
+    return;
+  }
+
+  if(!prompt){
+    $("result").textContent = "Bitte einen Auftrag eingeben.";
+    return;
+  }
+
+  const button = $("ask");
+  button.disabled = true;
+  $("result").textContent = "Gemini wird angefragt...";
+
+  try{
+    const response = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": key
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text:
+                "Du bist ein Videoeditor-Assistent. " +
+                "Erstelle konkrete Schnittideen, Titel, " +
+                "Untertitel und Übergangsvorschläge auf Deutsch. " +
+                "Du kannst das Video nicht selbst rendern. Auftrag: " +
+                prompt
+            }]
+          }]
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if(!response.ok){
+      throw new Error(
+        data.error?.message || "HTTP " + response.status
+      );
+    }
+
+    const answer =
+      data.candidates?.[0]?.content?.parts
+        ?.map(part => part.text || "")
+        .join("\n");
+
+    $("result").textContent =
+      answer || "Keine Antwort erhalten.";
+
+    status("Gemini-Antwort erhalten.");
+
+  }catch(error){
+    $("result").textContent =
+      "Fehler: " + error.message +
+      "\nPrüfe API-Key, Modellzugriff und Internetverbindung.";
+
+    status("Gemini-Anfrage fehlgeschlagen.");
+
+  }finally{
+    button.disabled = false;
+  }
+});
+
+})();
 </script>
 </body>
 </html>
