@@ -1,253 +1,270 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Meine lokale KI</title>
-  <style>
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      font-family: system-ui, sans-serif;
-      color: #17202a;
-      background: #eef1f5;
-    }
-
-    header {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      padding: 14px 16px;
-      padding-top: max(14px, env(safe-area-inset-top));
-      background: #173c61;
-      color: white;
-      z-index: 2;
-    }
-
-    header h1 { margin: 0; font-size: 19px; }
-    header p { margin: 3px 0 0; font-size: 12px; opacity: .85; }
-
-    #chat {
-      height: 100dvh;
-      overflow-y: auto;
-      padding: 82px 12px 105px;
-    }
-
-    .message {
-      width: fit-content;
-      max-width: 88%;
-      margin: 10px 0;
-      padding: 11px 14px;
-      border-radius: 16px;
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
-      line-height: 1.4;
-    }
-
-    .user {
-      margin-left: auto;
-      background: #1769aa;
-      color: white;
-      border-bottom-right-radius: 5px;
-    }
-
-    .bot {
-      margin-right: auto;
-      background: white;
-      border-bottom-left-radius: 5px;
-      box-shadow: 0 1px 3px #0001;
-    }
-
-    #bar {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      display: flex;
-      gap: 8px;
-      padding: 10px 12px;
-      padding-bottom: max(10px, env(safe-area-inset-bottom));
-      background: white;
-      border-top: 1px solid #d5dbe1;
-    }
-
-    #text {
-      flex: 1;
-      min-width: 0;
-      padding: 12px;
-      border: 1px solid #c5ccd4;
-      border-radius: 22px;
-      font: inherit;
-      font-size: 16px;
-    }
-
-    button {
-      border: 0;
-      border-radius: 22px;
-      padding: 0 18px;
-      background: #1769aa;
-      color: white;
-      font: inherit;
-    }
-
-    #clear {
-      position: fixed;
-      right: 12px;
-      top: 52px;
-      z-index: 3;
-      padding: 6px 10px;
-      border-radius: 8px;
-      background: #ffffff22;
-      font-size: 12px;
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lokal-Chat v2</title>
+<style>
+:root{--bg:#f2f3f8;--pane:#ffffffcc;--text:#1c1c1e;--mute:#6e6e73;--a1:#6a5cff;--a2:#00b4ff;--bot:#fff;--line:#e2e3ea;--sh:0 2px 10px #0000001a}
+@media(prefers-color-scheme:dark){:root{--bg:#0d0e14;--pane:#1a1b24cc;--text:#f2f2f7;--mute:#9a9aa5;--bot:#23242f;--line:#2f3040;--sh:0 2px 10px #0000008a}}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font:17px -apple-system,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+header{display:flex;gap:8px;align-items:center;padding:10px 14px;background:linear-gradient(135deg,var(--a1),var(--a2));color:#fff;box-shadow:var(--sh)}
+header b{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:18px}
+button,select{font:inherit;padding:9px 14px;border-radius:14px;border:1px solid var(--line);background:var(--bot);color:var(--text)}
+header button,header select{background:#ffffff30;color:#fff;border:0;max-width:170px}
+header select option{color:#000}
+button.p{background:linear-gradient(135deg,var(--a1),var(--a2));color:#fff;border:0;font-weight:600}
+button.d{color:#ff453a}
+#main{flex:1;display:flex;min-height:0;position:relative}
+#side{width:290px;max-width:85%;background:var(--bot);border-right:1px solid var(--line);display:none;flex-direction:column;padding:12px;gap:8px;overflow:auto;position:absolute;top:0;bottom:0;left:0;z-index:5;box-shadow:var(--sh)}
+#side.open{display:flex}
+.chat{display:flex;gap:6px;align-items:center}
+.chat span{flex:1;padding:9px 10px;border-radius:12px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.chat.act span{background:var(--bg);font-weight:600}
+#msgs{flex:1;overflow:auto;padding:16px 14px;display:flex;flex-direction:column;gap:10px}
+.row{display:flex;gap:8px;align-items:flex-end;max-width:100%}
+.row.me{justify-content:flex-end}
+.av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--a1),var(--a2));display:flex;align-items:center;justify-content:center;font-size:16px;flex:none}
+.m{max-width:78%;padding:10px 14px;border-radius:20px;white-space:pre-wrap;word-wrap:break-word;box-shadow:var(--sh);line-height:1.35}
+.me .m{background:linear-gradient(135deg,var(--a1),var(--a2));color:#fff;border-bottom-right-radius:6px}
+.bot .m{background:var(--bot);border-bottom-left-radius:6px}
+.m a{display:block;margin-top:6px;font-size:14px;color:var(--a1)}
+.dots span{display:inline-block;width:8px;height:8px;margin:0 2px;border-radius:50%;background:var(--mute);animation:b 1s infinite}
+.dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}
+@keyframes b{0%,80%,100%{opacity:.25}40%{opacity:1}}
+.hint{margin:auto;text-align:center;padding:20px;color:var(--mute)}
+.hint h2{margin:0 0 6px;color:var(--text)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px}
+.chips button{border-radius:20px;font-size:15px;box-shadow:var(--sh)}
+footer{display:flex;gap:8px;padding:10px 12px;background:var(--pane);backdrop-filter:blur(12px);border-top:1px solid var(--line)}
+textarea{flex:1;font:inherit;padding:10px 14px;border-radius:20px;border:1px solid var(--line);background:var(--bot);color:var(--text);resize:none;max-height:120px}
+#warn{background:#ff9f0a;color:#000;padding:6px 12px;font-size:14px;display:none}
+#bk{display:none;position:absolute;inset:0;background:var(--bg);z-index:9;padding:14px;flex-direction:column;gap:8px}
+#bk textarea{border-radius:12px;flex:1;max-height:none}
+</style>
 </head>
 <body>
-  <header>
-    <h1>Meine lokale KI</h1>
-    <p>Chat und Gedächtnis bleiben in diesem Browser gespeichert.</p>
-  </header>
-
-  <button id="clear">Chat löschen</button>
-  <main id="chat" aria-live="polite"></main>
-
-  <form id="bar">
-    <input id="text" autocomplete="off"
-           placeholder="Schreib eine Nachricht…" aria-label="Nachricht">
-    <button type="submit">Senden</button>
-  </form>
+<div id="warn"></div>
+<header>
+  <button id="menu">☰</button>
+  <b id="title">Lokal-Chat</b>
+  <select id="brain" title="Gehirn"></select>
+</header>
+<div id="main">
+  <div id="side">
+    <button class="p" id="new">+ Neuer Chat</button>
+    <div id="list"></div>
+    <button id="backup">Sichern / Laden</button>
+    <button class="d" id="wipe">Alle Chats löschen</button>
+  </div>
+  <div id="msgs"></div>
+  <div id="bk">
+    <b>Sichern / Laden</b>
+    <div style="color:var(--mute);font-size:14px">„Backup erzeugen“ füllt das Feld. Text kopieren und z. B. in Notizen sichern. Zum Laden Text einfügen und „Laden“ tippen (ersetzt alle aktuellen Chats).</div>
+    <textarea id="bkText"></textarea>
+    <div style="display:flex;gap:8px"><button id="bkMake">Backup erzeugen</button><button id="bkLoad" class="p">Laden</button><button id="bkClose">Schließen</button></div>
+  </div>
+</div>
+<footer>
+  <textarea id="inp" rows="1" placeholder="Nachricht schreiben …"></textarea>
+  <button class="p" id="send">Senden</button>
+</footer>
 
 <script>
-  const KEY = "ipad-lokale-ki-chat-v1";
-  const chat = document.getElementById("chat");
-  const form = document.getElementById("bar");
-  const input = document.getElementById("text");
+// ===== 1. SPEICHER (localStorage, lokal im Browser) =====
+var KEY = "lokalchat_v1";   // gleicher Schlüssel wie Version 1: alte Chats bleiben erhalten
+var state = { chats: [], current: null, name: "" };
+var storageOK = true, pending = false;
 
-  let messages = [];
-  try {
-    messages = JSON.parse(localStorage.getItem(KEY) || "[]");
-  } catch {
-    messages = [];
+function load() {
+  try { var raw = localStorage.getItem(KEY); if (raw) state = JSON.parse(raw); }
+  catch (e) { storageOK = false; }
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(state)); storageOK = true; }
+  catch (e) { storageOK = false; }
+  var w = document.getElementById("warn");
+  if (!storageOK) {
+    w.style.display = "block";
+    w.textContent = "Achtung: Speichern nicht möglich. Chats gehen beim Schließen verloren. Nutze „Sichern / Laden“.";
+  } else { w.style.display = "none"; }
+}
+
+// ===== 2. REGELN (offline, kein Sprachmodell) =====
+// Gibt Text zurück oder null, wenn keine Regel passt.
+function rules(text) {
+  var t = text.trim(), l = t.toLowerCase(), m;
+  if ((m = l.match(/ich hei(ß|ss)e\s+([^\s.,!?]+)/))) {
+    state.name = m[2].charAt(0).toUpperCase() + m[2].slice(1);
+    return "Schön, dich kennenzulernen, " + state.name + "!";
   }
-
-  function save() {
+  if (/wie hei(ß|ss)e ich/.test(l))
+    return state.name ? "Du heißt " + state.name + "." : "Das weiß ich noch nicht. Sag: „Ich heiße …“";
+  if (/\b(hallo|hi|hey|moin|servus|guten (tag|morgen|abend))\b/.test(l))
+    return "Hallo" + (state.name ? " " + state.name : "") + "! Wie kann ich helfen?";
+  if (/uhr|wie spät/.test(l)) return "Es ist " + new Date().toLocaleTimeString("de-DE") + " Uhr.";
+  if (/datum|welcher tag|welches datum/.test(l))
+    return "Heute ist " + new Date().toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) + ".";
+  if (/witz/.test(l)) return "Warum nehmen Programmierer die Treppe? Weil der Aufzug einen Bug hat.";
+  if (/wie geht/.test(l)) return "Mir geht es gut, ich bin ja nur ein paar Regeln im Browser.";
+  if (/(danke|dankeschön)/.test(l)) return "Gern geschehen!";
+  if (/(tschüss|tschuess|bye|ciao)/.test(l)) return "Bis bald!";
+  var calc = t.replace(/,/g, ".").replace(/[x×]/gi, "*").replace(/:/g, "/");
+  if (/^[\d\s+\-*\/().]+$/.test(calc) && /\d/.test(calc) && /[+\-*\/]/.test(calc)) {
     try {
-      localStorage.setItem(KEY, JSON.stringify(messages));
-    } catch {
-      addMessage("System", "Der Browser-Speicher ist voll. Lösche alte Chats.");
-    }
+      var r = Function('"use strict";return (' + calc + ")")();
+      if (isFinite(r)) return "= " + String(r).replace(".", ",");
+    } catch (e) {}
   }
+  if (/wer bist du|was bist du|was kannst du/.test(l))
+    return "Ich bin ein einfaches Regelprogramm, keine echte KI. Ich grüße, nenne Uhrzeit und Datum, rechne (z. B. 12*3), merke mir deinen Namen und erzähle einen Witz. Mit dem Gehirn „Regeln + Wikipedia“ schlage ich Begriffe nach, solange die App offen ist und du online bist.";
+  return null;
+}
 
-  function addMessage(role, text) {
-    messages.push({ role, text, time: Date.now() });
-    save();
-    showMessage(role, text);
-  }
-
-  function showMessage(role, text) {
-    const bubble = document.createElement("div");
-    bubble.className = "message " + (role === "Du" ? "user" : "bot");
-    bubble.textContent = text;
-    chat.appendChild(bubble);
-    chat.scrollTop = chat.scrollHeight;
-  }
-
-  // Einfache lokale Erinnerung: sucht nach früheren Nachrichten
-  // mit gemeinsamen bedeutungsvollen Wörtern.
-  function findMemory(query) {
-    const words = query.toLowerCase()
-      .replace(/[^\p{L}\p{N}\s]/gu, " ")
-      .split(/\s+/)
-      .filter(w => w.length > 3);
-
-    if (!words.length) return null;
-
-    const candidates = messages.filter(m =>
-      m.role === "Du" &&
-      m.text.toLowerCase() !== query.toLowerCase()
-    );
-
-    let best = null;
-    let bestScore = 0;
-
-    for (const m of candidates) {
-      const old = m.text.toLowerCase();
-      const score = words.reduce((n, word) => n + (old.includes(word) ? 1 : 0), 0);
-      if (score > bestScore) {
-        best = m.text;
-        bestScore = score;
-      }
-    }
-
-    return bestScore > 0 ? best : null;
-  }
-
-  function think(text) {
-    const t = text.toLowerCase().trim();
-
-    if (/^(hi|hallo|hey|guten morgen|guten tag)\b/.test(t)) {
-      return "Hallo! Schreib mir etwas. Ich speichere unseren Chat in diesem Browser.";
-    }
-
-    if (t.includes("wie heißt du")) {
-      return "Ich bin deine lokale KI. Du kannst den Namen im HTML-Code ändern.";
-    }
-
-    if (t.includes("was weißt du über mich") || t.includes("was erinnerst du")) {
-      const past = messages
-        .filter(m => m.role === "Du")
-        .slice(-5)
-        .map(m => "• " + m.text);
-
-      return past.length
-        ? "Diese letzten Nachrichten von dir kann ich im Chatverlauf sehen:\n" + past.join("\n")
-        : "Ich habe noch keine Nachrichten von dir gespeichert.";
-    }
-
-    const memory = findMemory(t);
-    if (memory) {
-      return "Das erinnert mich an eine frühere Nachricht von dir:\n„" +
-        memory + "“\n\nIch kann einfache Ähnlichkeiten im gespeicherten Chat finden, aber noch nicht frei darüber nachdenken.";
-    }
-
-    if (t.endsWith("?")) {
-      return "Ich habe deine Frage gespeichert, kann sie aber ohne ein eingebautes Sprachmodell nicht zuverlässig beantworten. Ich kann mich an Nachrichten erinnern, die du hier schreibst.";
-    }
-
-    return "Ich habe das gespeichert. Meine jetzige Denkfunktion ist noch einfach: Sie kann den Chat behalten und ähnliche frühere Nachrichten suchen.";
-  }
-
-  function renderSaved() {
-    chat.innerHTML = "";
-    if (!messages.length) {
-      showMessage("KI", "Hallo! Ich bin deine lokale Chat-KI. Schreib mir unten eine Nachricht.");
-      return;
-    }
-    for (const m of messages) showMessage(m.role, m.text);
-  }
-
-  form.addEventListener("submit", event => {
-    event.preventDefault();
-    const text = input.value.trim();
-    if (!text) return;
-
-    input.value = "";
-    addMessage("Du", text);
-
-    const answer = think(text);
-    addMessage("KI", answer);
+// ===== 3. WIKIPEDIA-SUCHE (braucht Internet, nur bei offener App) =====
+function wiki(q) {
+  var url = "https://de.wikipedia.org/w/api.php?action=query&format=json&origin=*" +
+    "&generator=search&gsrlimit=1&gsrsearch=" + encodeURIComponent(q) +
+    "&prop=extracts&exintro=1&explaintext=1&exsentences=3";
+  return fetch(url).then(function (r) { return r.json(); }).then(function (d) {
+    var pages = d.query && d.query.pages;
+    if (!pages) return null;
+    var p = pages[Object.keys(pages)[0]];
+    if (!p || !p.extract) return null;
+    return { text: p.extract, link: "https://de.wikipedia.org/wiki/" + encodeURIComponent(p.title.replace(/ /g, "_")), linkText: "Quelle: Wikipedia – " + p.title };
   });
+}
 
-  document.getElementById("clear").addEventListener("click", () => {
-    if (!confirm("Den gespeicherten Chat wirklich löschen?")) return;
-    messages = [];
-    localStorage.removeItem(KEY);
-    renderSaved();
+// ===== 4. GEHIRNE (austauschbar): reply(text) -> Promise<string | {text, link, linkText}> =====
+var NOPE = "Das verstehe ich nicht. Ich bin nur eine Regel-Demo. Probiere: „Hallo“, „Wie spät ist es?“, „12*3“ oder „Erzähl einen Witz“.";
+var brains = {
+  wiki: {
+    name: "Regeln + Wikipedia (online)",
+    reply: function (text) {
+      var r = rules(text);
+      if (r !== null) return Promise.resolve(r);
+      var m = text.trim().match(/^(suche|such|google|was ist|was sind|wer ist|wer war|erkläre|erkläre mir)\s+(.+)/i);
+      var q = (m ? m[2] : text).replace(/[?!.]+$/, "");
+      return wiki(q).then(function (res) {
+        return res || "Dazu habe ich bei Wikipedia nichts gefunden.";
+      }).catch(function () {
+        return "Websuche nicht möglich (kein Internet oder Zugriff blockiert). Offline kann ich nur die Regeln.";
+      });
+    }
+  },
+  regeln: {
+    name: "Regeln (offline)",
+    reply: function (text) { var r = rules(text); return Promise.resolve(r !== null ? r : NOPE); }
+  },
+  echo: {
+    name: "Echo (Test)",
+    reply: function (text) { return Promise.resolve("Du hast gesagt: " + text); }
+  }
+};
+
+// ===== 5. CHAT-LOGIK =====
+function $(id) { return document.getElementById(id); }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function cur() {
+  for (var i = 0; i < state.chats.length; i++) if (state.chats[i].id === state.current) return state.chats[i];
+  return null;
+}
+function newChat() {
+  var c = { id: uid(), title: "Neuer Chat", msgs: [] };
+  state.chats.unshift(c); state.current = c.id; save(); render();
+}
+function delChat(id) {
+  if (!confirm("Diesen Chat löschen?")) return;
+  state.chats = state.chats.filter(function (c) { return c.id !== id; });
+  if (state.current === id) state.current = state.chats.length ? state.chats[0].id : null;
+  save(); render();
+}
+function addRow(box, role, content) {
+  var row = document.createElement("div"); row.className = "row " + role;
+  if (role === "bot") { var av = document.createElement("div"); av.className = "av"; av.textContent = "🤖"; row.appendChild(av); }
+  var b = document.createElement("div"); b.className = "m";
+  if (content === null) { b.innerHTML = '<span class="dots"><span></span><span></span><span></span></span>'; }
+  else {
+    b.appendChild(document.createTextNode(content.text));
+    if (content.link) {
+      var a = document.createElement("a"); a.href = content.link; a.target = "_blank"; a.rel = "noopener";
+      a.textContent = content.linkText || content.link; b.appendChild(a);
+    }
+  }
+  row.appendChild(b); box.appendChild(row);
+}
+function render() {
+  var c = cur();
+  $("title").textContent = c ? c.title : "Lokal-Chat";
+  var list = $("list"); list.innerHTML = "";
+  state.chats.forEach(function (ch) {
+    var row = document.createElement("div"); row.className = "chat" + (ch.id === state.current ? " act" : "");
+    var s = document.createElement("span"); s.textContent = ch.title;
+    s.onclick = function () { state.current = ch.id; save(); render(); $("side").classList.remove("open"); };
+    var d = document.createElement("button"); d.textContent = "🗑"; d.className = "d";
+    d.onclick = function () { delChat(ch.id); };
+    row.appendChild(s); row.appendChild(d); list.appendChild(row);
   });
+  var box = $("msgs"); box.innerHTML = "";
+  if (!c || !c.msgs.length) {
+    var h = document.createElement("div"); h.className = "hint";
+    h.innerHTML = "<h2>Hallo! 👋</h2>Ich bin eine einfache Regel-KI, kein Sprachmodell.";
+    var chips = document.createElement("div"); chips.className = "chips";
+    ["Hallo", "Wie spät ist es?", "12*3", "Was ist ein Papagei?", "Erzähl einen Witz"].forEach(function (s) {
+      var b = document.createElement("button"); b.textContent = s;
+      b.onclick = function () { $("inp").value = s; send(); };
+      chips.appendChild(b);
+    });
+    h.appendChild(chips); box.appendChild(h);
+  } else {
+    c.msgs.forEach(function (m) { addRow(box, m.role === "user" ? "me" : "bot", m); });
+  }
+  if (pending) addRow(box, "bot", null);
+  box.scrollTop = box.scrollHeight;
+}
+function send() {
+  var inp = $("inp"), text = inp.value.trim();
+  if (!text || pending) return;
+  if (!cur()) newChat();
+  var c = cur();
+  c.msgs.push({ role: "user", text: text });
+  if (c.msgs.length === 1) c.title = text.slice(0, 30);
+  inp.value = ""; inp.style.height = "auto";
+  pending = true; save(); render();
+  function done(ans) {
+    if (typeof ans === "string") ans = { text: ans };
+    c.msgs.push({ role: "bot", text: ans.text, link: ans.link, linkText: ans.linkText });
+    pending = false; save(); render();
+  }
+  brains[$("brain").value].reply(text, c).then(done).catch(function (e) { done("Fehler im Gehirn: " + e); });
+}
 
-  renderSaved();
+// ===== 6. START =====
+load();
+Object.keys(brains).forEach(function (k) {
+  var o = document.createElement("option"); o.value = k; o.textContent = brains[k].name; $("brain").appendChild(o);
+});
+$("menu").onclick = function () { $("side").classList.toggle("open"); };
+$("new").onclick = function () { newChat(); $("side").classList.remove("open"); };
+$("send").onclick = send;
+$("inp").addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } });
+$("inp").addEventListener("input", function () { this.style.height = "auto"; this.style.height = Math.min(this.scrollHeight, 120) + "px"; });
+$("wipe").onclick = function () {
+  if (confirm("ALLE Chats unwiderruflich löschen?")) { state = { chats: [], current: null, name: "" }; save(); render(); }
+};
+$("backup").onclick = function () { $("bk").style.display = "flex"; };
+$("bkClose").onclick = function () { $("bk").style.display = "none"; };
+$("bkMake").onclick = function () { $("bkText").value = JSON.stringify(state); };
+$("bkLoad").onclick = function () {
+  try {
+    var d = JSON.parse($("bkText").value);
+    if (!d || !Array.isArray(d.chats)) throw 0;
+    state = d; save(); render(); $("bk").style.display = "none"; alert("Backup geladen.");
+  } catch (e) { alert("Das ist kein gültiges Backup."); }
+};
+save(); render();
 </script>
 </body>
 </html>
